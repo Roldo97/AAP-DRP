@@ -1,0 +1,3 @@
+[db_servers]
+db_primary ansible_host=nfs01.lab.local ansible_user=root ansible_password=root4u
+db_secondary ansible_host=nfs02.lab.local ansible_user=root ansible_password=root4u

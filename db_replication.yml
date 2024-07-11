@@ -1,0 +1,94 @@
+---
+- name: Configures DB replication
+  hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Prepares primary node for replication
+      when: inventory_hostname == "db_primary"
+      block:
+
+        - name: Ensures replication user exists in primary database
+          become_user: postgres
+          register: replica_user_creation
+          ansible.builtin.command:
+            cmd: "psql -c 'CREATE ROLE replica_user WITH REPLICATION LOGIN;'"
+          changed_when: "'CREATE ROLE' in replica_user_creation['stdout']"
+          ignore_errors: true
+
+        - name: "Grant {{ hostvars['db_secondary']['ansible_facts']['default_ipv4']['address'] }}/32 access for replica_user using trust authentication"
+          community.postgresql.postgresql_pg_hba:
+            dest: /var/lib/pgsql/data/pg_hba.conf
+            contype: host
+            users: replica_user
+            source: "{{ hostvars['db_secondary']['ansible_facts']['default_ipv4']['address'] }}/32"
+            databases: replication
+            method: trust
+          notify: Restart postgresql
+
+        - name: Creates a backup of postgresql.conf file
+          ansible.builtin.copy:
+            remote_src: true
+            mode: preserve
+            src: /var/lib/pgsql/data/postgresql.conf
+            dest: "/var/lib/pgsql/data/postgresql.conf.bkp.{{ ansible_facts['date_time']['iso8601'] }}"
+          register: backup_conf
+          become_user: postgres
+
+        - name: Allows connections from all networks
+          ansible.builtin.lineinfile:
+            path: /var/lib/pgsql/data/postgresql.conf
+            regex: '^(#listen_addresses|listen_addresses).*'
+            line: "listen_addresses = '*'"
+          notify: Restart postgresql
+
+        - name: Specifies the amount of information to be written to the Write Ahead Log (WAL) file
+          ansible.builtin.lineinfile:
+            path: /var/lib/pgsql/data/postgresql.conf
+            regex: '^(#wal_level|wal_level).*'
+            line: "wal_level = logical"
+          notify: Restart postgresql
+          
+        - name: Allows the PostgreSQL server to write the entire content of each disk page to the WAL file during the first modification of the page
+          ansible.builtin.lineinfile: 
+            path: /var/lib/pgsql/data/postgresql.conf
+            regex: '^(#wal_log_hints|wal_log_hints).*' 
+            line: "wal_log_hints = on"
+          notify: Restart postgresql
+
+        - name: Gets stats of postgresql.conf
+          ansible.builtin.stat:
+            path: /var/lib/pgsql/data/postgresql.conf
+          register: postgres_conf
+
+        - name: Removes backup file if the configuration was not modified
+          ansible.builtin.file:
+            path: "{{ backup_conf['dest'] }}"
+            state: absent
+          when: "backup_conf['checksum'] == postgres_conf['stat']['checksum']"
+
+
+    - name: Configures secondary node
+      when: inventory_hostname == "db_secondary"
+      block:
+        - name: Stops database server
+          ansible.builtin.service:
+            name: postgresql
+            state: stopped
+
+        - name: Removes secondary db data
+          ansible.builtin.file:
+            path: "/var/lib/pgsql/data/"
+            state: absent
+
+        - name: Start the replication from Primary
+          become_user: postgres
+          ansible.builtin.command:
+            cmd: "pg_basebackup -h {{ hostvars['db_primary']['ansible_facts']['default_ipv4']['address'] }} -U replica_user -X stream -C -S replica_1 -v -R -D /var/lib/pgsql/data/"
+          notify: Restart postgresql
+
+  handlers:
+    - name: Restart postgresql
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
