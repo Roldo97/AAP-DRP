@@ -1,6 +1,6 @@
 ---
 - name: Configures DB replication
-  hosts: all
+  hosts: db_servers
   gather_facts: true
   become: true
   tasks:
