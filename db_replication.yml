@@ -16,6 +16,12 @@
           changed_when: "'CREATE ROLE' in replica_user_creation['stdout']"
           ignore_errors: true
 
+        - name: Deletes replication slot 'replica_1'
+          become_user: postgres
+          ansible.builtin.command:
+            cmd: "psql -c \"SELECT pg_drop_replication_slot('replica_1');\""
+          ignore_errors: true
+
         - name: "Grant {{ hostvars['db_secondary']['ansible_facts']['default_ipv4']['address'] }}/32 access for replica_user using trust authentication"
           community.postgresql.postgresql_pg_hba:
             dest: /var/lib/pgsql/data/pg_hba.conf

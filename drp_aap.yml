@@ -1,0 +1,73 @@
+---
+- name: Executes DRP in case of primary site or primary db failure
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+
+    - name: Configures Automation Controller nodes
+      when: inventory_hostname in groups['automation_controller']
+      block:
+        - name: Stops automation controller services on Control Nodes
+          ansible.builtin.service:
+            name: automation-controller.service
+            state: stopped
+
+        - name: Changes Controller DB configuration
+          ansible.builtin.replace:
+            path: /etc/tower/conf.d/postgres.py
+            regexp: "'{{ hostvars['db_primary']['ansible_facts']['fqdn'] }}'"
+            replace: "'{{ hostvars['db_secondary']['ansible_facts']['fqdn'] }}'"
+          notify: Restart automation controller services
+
+    - name: Ensures Automation Hub services are stooped
+      when: inventory_hostname in groups['automation_hub']
+      block:
+        - name: Stops automation hub services on Hub Nodes
+          ansible.builtin.service:
+            name: "{{ item }}"
+            state: stopped
+          loop:
+            - pulpcore.service
+            - pulpcore-api.service
+            - pulpcore-content.service
+            - pulpcore-worker@1.service
+            - pulpcore-worker@2.service
+            - nginx.service
+            - redis.service
+
+        - name: Changes Hub DB configuration
+          ansible.builtin.replace:
+            path: /etc/pulp/settings.py
+            regexp: "'{{ hostvars['db_primary']['ansible_facts']['fqdn'] }}'"
+            replace: "'{{ hostvars['db_secondary']['ansible_facts']['fqdn'] }}'"
+          notify: Restart automation hub services
+
+    - name: Ensures secondary DB is promoted
+      when: inventory_hostname == "db_secondary"
+      block:
+        - name: Promotes DB secondary to primary
+          become_user: postgres
+          ansible.builtin.command:
+            cmd: /usr/bin/pg_ctl promote -D /var/lib/pgsql/data
+
+
+  handlers:
+    - name: Restart automation controller services
+      ansible.builtin.service:
+        name: automation-controller.service
+        state: restarted
+
+    - name: Restart automation hub services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - pulpcore.service
+        - pulpcore-api.service
+        - pulpcore-content.service
+        - pulpcore-worker@1.service
+        - pulpcore-worker@2.service
+        - nginx.service
+        - redis.service
+

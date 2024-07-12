@@ -1,3 +1,11 @@
 [db_servers]
-db_primary ansible_host=nfs01.lab.local ansible_user=root ansible_password=root4u
-db_secondary ansible_host=nfs02.lab.local ansible_user=root ansible_password=root4u
+db_primary ansible_host=nfs01.lab.local
+db_secondary ansible_host=nfs02.lab.local
+
+[automation_controller]
+control_node1 ansible_host=aap-cn01.lab.local
+control_node2 ansible_host=aap-cn02.lab.local
+
+[automation_hub]
+automation_hub1 ansible_host=aap-hub01.lab.local
+automation_hub2 ansible_host=aap-hub02.lab.local
