@@ -73,6 +73,8 @@
             state: absent
           when: "backup_conf['checksum'] == postgres_conf['stat']['checksum']"
 
+    - name: Restart postgres if changes were applied
+      ansible.builtin.meta: flush_handlers
 
     - name: Configures secondary node
       when: inventory_hostname == "db_secondary"
