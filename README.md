@@ -63,10 +63,10 @@ ansible-playbook drp_aap.yml
 ```
 
 This playbook will:
-1. Stop the Automation Controller and Automation Hub services, in order to prevent from new connections or data injection to the DB.
-2. Configure the DB parameters pointing to the secondary DB in the "/etc/tower/conf.d/postgres.py" and "/etc/pulp/settings.py" files, for Cotroller and Hub nodes, respectively.
+1. Stop the Automation Controller, Event Driven Controller, and Automation Hub services, in order to prevent new connections or data injection to the DB.
+2. Configure the DB parameters pointing to the secondary DB in the "/etc/tower/conf.d/postgres.py", "/etc/ansible-automation-platform/eda/environment", and "/etc/pulp/settings.py" files, for Cotroller, EDA, and Hub nodes, respectively.
 3. Promote the secondary (Slave) DB to assume the Master role, while the primary DB is down.
-4. Start the Automation Controller and Automation Hub services, using now the secondary database.
+4. Start the Automation Controller, Event Driven Controller, and Automation Hub services, using now the secondary database.
 
 ### Perform DRP rollback (from Secondary to Main DB)
 Once the Main site, or the Master DB server are back online, you can execute the "rollback_drp_aap.yml" playbook in order to swap back to the Master server as Main DB server, and restore the replication to the Slave server.
@@ -76,8 +76,8 @@ ansible-playbook rollback_drp_aap.yml
 ```
 
 This playbook will:
-1. Stop Controller and Hub services, to prevent new connections or data injectio to the database.
-2. Configure the DB parameters pointing to the primary DB in the "/etc/tower/conf.d/postgres.py" and "/etc/pulp/settings.py" files, for Cotroller and Hub nodes, respectively.
+1. Stop Automation Controller, Event Driven Controller, and Hub services, to prevent new connections or data injectio to the database.
+2. Configure the DB parameters pointing to the primary DB in the "/etc/tower/conf.d/postgres.py", "/etc/ansible-automation-platform/eda/environment" and "/etc/pulp/settings.py" files, for Cotroller, EDA, and Hub nodes, respectively.
 3. Delete outdated data from the primary server, and copy current data from the secondary server.
 4. Restore replication from Main to Secondary.
-5. Start the Automation Controller and Automation Hub services, using now the primary database.
+5. Start the Automation Controller, Event Driven Controller and Automation Hub services, using now the primary database.
