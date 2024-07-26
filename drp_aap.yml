@@ -20,7 +20,24 @@
             replace: "'{{ hostvars['db_secondary']['ansible_facts']['fqdn'] }}'"
           notify: Restart automation controller services
 
-    - name: Ensures Automation Hub services are stooped
+    - name: Configures Event Driven Controller node
+      when: inventory_hostname in groups['event_driven_controller']
+      block:
+        - name: Stops automation controller services on Control Nodes
+          ansible.builtin.service:
+            name: automation-eda-controller.service
+            state: stopped
+
+        - name: Changes Event Driven Controller DB configuration
+          ansible.builtin.replace:
+            path: /etc/ansible-automation-platform/eda/environment
+            regexp: "^(EDA_DB_HOST={{ hostvars['db_primary']['ansible_facts']['fqdn'] }})$"
+            replace: "EDA_DB_HOST={{ hostvars['db_secondary']['ansible_facts']['fqdn'] }}"
+          notify: Restart automation eda controller service
+
+
+
+    - name: Configures Private Automation Hub nodes
       when: inventory_hostname in groups['automation_hub']
       block:
         - name: Stops automation hub services on Hub Nodes
@@ -56,6 +73,11 @@
     - name: Restart automation controller services
       ansible.builtin.service:
         name: automation-controller.service
+        state: restarted
+
+    - name: Restart automation eda controller service
+      ansible.builtin.service:
+        name: automation-eda-controller.service
         state: restarted
 
     - name: Restart automation hub services

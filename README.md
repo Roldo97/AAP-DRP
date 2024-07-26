@@ -1,16 +1,17 @@
 
-# AAP DRP (Controller + Hub)
+# AAP DRP (Controller + Hub + EDA)
 
 This project is intended to aid you in the configuration of the replication of the DB servers used in an Ansible Automation Platfor deployment, and the execution of the DRP and its respective rollback actions.
 ## Features
 
 - Configures streaming replication among DB servers (Master - Slave) ([Based on this guide](https://www.cherryservers.com/blog/how-to-set-up-postgresql-database-replication)).
-- Performs DRP of the platform (Controller and Hub instances) in case of a complete or partial failure in the main site (where the Master database is running).
-- Performs the rollback of the DRP, by syncing the data of the slave database to the master database, and restoring the replication.
+- Performs DRP of the platform (Controller, Hub instances and EDA node) in case of a complete or partial failure in the main site (where the Master database is running).
+- Performs the rollback of the DRP, by syncing the data of the slave database to the master database, reconfiguring nodes to point to the master database, and restoring the replication.
 ## Usage/Examples
 
 ### Requirements/considerations
 - For the nodes where the playbooks are going to be executed, SSH key-based authentication must be set against the database servers (this is required by the ansible.posix.synchronize module). Please, note that this playbooks where developed by using root user as the user to perform the tasks in the managed nodes. If you are using a different user, ensure it has the appropiate privileges to avoid permissions issues.
+- Please, note that as EDA cannot run in a clusterized mode, this playbooks will just reconfigure the DB parameters for the single EDA node. If the site, where the EDA node was running, fails, ensure to comment the EDA node from the inventory file.
 - SSH key-based authentication must be set among Slave and Master DB servers (i.e. Slave DB root user must be able to login to the Master DB server without specifying a password).
 - Ensure to adjust the playbooks according to your platform requirements.
 
@@ -34,6 +35,8 @@ automation_hub2 ansible_host={automation_hub_node_1}
 automation_hubN ansible_host={automation_hub_node_N}
 ...
 
+[event_driven_controller]
+event_driven1 ansible_host={envent_driven_ansible_node}
 ```
 
 ### Configure the database replication

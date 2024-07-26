@@ -1,11 +1,12 @@
 [db_servers]
-db_primary ansible_host=nfs01.lab.local
-db_secondary ansible_host=nfs02.lab.local
+db_primary ansible_host=aap-cn01.lab.local
+db_secondary ansible_host=aap-db02.lab.local
 
 [automation_controller]
 control_node1 ansible_host=aap-cn01.lab.local
-control_node2 ansible_host=aap-cn02.lab.local
 
 [automation_hub]
-automation_hub1 ansible_host=aap-hub01.lab.local
-automation_hub2 ansible_host=aap-hub02.lab.local
+automation_hub1 ansible_host=aap-ah01.lab.local
+
+[event_driven_controller]
+event_driven1 ansible_host=aap-ed01.lab.local
