@@ -11,7 +11,7 @@ This project is intended to aid you in the configuration of the replication of t
 
 ### Requirements/considerations
 - For the nodes where the playbooks are going to be executed, SSH key-based authentication must be set against the database servers (this is required by the ansible.posix.synchronize module). Please, note that this playbooks where developed by using root user as the user to perform the tasks in the managed nodes. If you are using a different user, ensure it has the appropiate privileges to avoid permissions issues.
-- Please, note that as EDA cannot run in a clusterized mode, this playbooks will just reconfigure the DB parameters for the single EDA node. If the site, where the EDA node was running, fails, ensure to comment the EDA node from the inventory file.
+- Please, note that as EDA cannot run in a clusterized mode, this playbooks will just reconfigure the DB parameters for the single EDA node. If the site, where the EDA node was running, or the EDA node fails, ensure to comment out the EDA node from the inventory file.
 - SSH key-based authentication must be set among Slave and Master DB servers (i.e. Slave DB root user must be able to login to the Master DB server without specifying a password).
 - Ensure to adjust the playbooks according to your platform requirements.
 
