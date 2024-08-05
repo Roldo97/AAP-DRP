@@ -16,7 +16,7 @@ This project is intended to aid you in the configuration of the replication of t
 - Ensure to adjust the playbooks according to your platform requirements.
 
 ### Edit the inventory file
-Specify your master and slave DB servers in the "db_servers" group. Add your controller and hub nodes to their respective groups. **Host aliases must not be changed**.
+Specify your master and slave DB servers in the "db_servers" group. Add your controller and hub nodes to their respective groups. **Host aliases must not be changed for "db_servers" group**.
 
 ```ini
 [db_servers]
