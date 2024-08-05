@@ -1,16 +1,17 @@
 
-# AAP DRP (Controller + Hub)
+# AAP DRP (Controller + Hub + EDA)
 
 This project is intended to aid you in the configuration of the replication of the DB servers used in an Ansible Automation Platfor deployment, and the execution of the DRP and its respective rollback actions.
 ## Features
 
 - Configures streaming replication among DB servers (Master - Slave) ([Based on this guide](https://www.cherryservers.com/blog/how-to-set-up-postgresql-database-replication)).
-- Performs DRP of the platform (Controller and Hub instances) in case of a complete or partial failure in the main site (where the Master database is running).
-- Performs the rollback of the DRP, by syncing the data of the slave database to the master database, and restoring the replication.
+- Performs DRP of the platform (Controller, Hub instances and EDA node) in case of a complete or partial failure in the main site (where the Master database is running).
+- Performs the rollback of the DRP, by syncing the data of the slave database to the master database, reconfiguring nodes to point to the master database, and restoring the replication.
 ## Usage/Examples
 
 ### Requirements/considerations
 - For the nodes where the playbooks are going to be executed, SSH key-based authentication must be set against the database servers (this is required by the ansible.posix.synchronize module). Please, note that this playbooks where developed by using root user as the user to perform the tasks in the managed nodes. If you are using a different user, ensure it has the appropiate privileges to avoid permissions issues.
+- Please, note that as EDA cannot run in a clusterized mode, this playbooks will just reconfigure the DB parameters for the single EDA node. If the site, where the EDA node was running, or the EDA node fails, ensure to comment out the EDA node from the inventory file.
 - SSH key-based authentication must be set among Slave and Master DB servers (i.e. Slave DB root user must be able to login to the Master DB server without specifying a password).
 - Ensure to adjust the playbooks according to your platform requirements.
 
@@ -34,6 +35,8 @@ automation_hub2 ansible_host={automation_hub_node_1}
 automation_hubN ansible_host={automation_hub_node_N}
 ...
 
+[event_driven_controller]
+event_driven1 ansible_host={envent_driven_ansible_node}
 ```
 
 ### Configure the database replication
@@ -60,10 +63,10 @@ ansible-playbook drp_aap.yml
 ```
 
 This playbook will:
-1. Stop the Automation Controller and Automation Hub services, in order to prevent from new connections or data injection to the DB.
-2. Configure the DB parameters pointing to the secondary DB in the "/etc/tower/conf.d/postgres.py" and "/etc/pulp/settings.py" files, for Cotroller and Hub nodes, respectively.
+1. Stop the Automation Controller, Event Driven Controller, and Automation Hub services, in order to prevent new connections or data injection to the DB.
+2. Configure the DB parameters pointing to the secondary DB in the "/etc/tower/conf.d/postgres.py", "/etc/ansible-automation-platform/eda/environment", and "/etc/pulp/settings.py" files, for Cotroller, EDA, and Hub nodes, respectively.
 3. Promote the secondary (Slave) DB to assume the Master role, while the primary DB is down.
-4. Start the Automation Controller and Automation Hub services, using now the secondary database.
+4. Start the Automation Controller, Event Driven Controller, and Automation Hub services, using now the secondary database.
 
 ### Perform DRP rollback (from Secondary to Main DB)
 Once the Main site, or the Master DB server are back online, you can execute the "rollback_drp_aap.yml" playbook in order to swap back to the Master server as Main DB server, and restore the replication to the Slave server.
@@ -73,8 +76,8 @@ ansible-playbook rollback_drp_aap.yml
 ```
 
 This playbook will:
-1. Stop Controller and Hub services, to prevent new connections or data injectio to the database.
-2. Configure the DB parameters pointing to the primary DB in the "/etc/tower/conf.d/postgres.py" and "/etc/pulp/settings.py" files, for Cotroller and Hub nodes, respectively.
+1. Stop Automation Controller, Event Driven Controller, and Hub services, to prevent new connections or data injectio to the database.
+2. Configure the DB parameters pointing to the primary DB in the "/etc/tower/conf.d/postgres.py", "/etc/ansible-automation-platform/eda/environment" and "/etc/pulp/settings.py" files, for Cotroller, EDA, and Hub nodes, respectively.
 3. Delete outdated data from the primary server, and copy current data from the secondary server.
 4. Restore replication from Main to Secondary.
-5. Start the Automation Controller and Automation Hub services, using now the primary database.
+5. Start the Automation Controller, Event Driven Controller and Automation Hub services, using now the primary database.
